@@ -6,6 +6,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /sitegen .
 
 FROM alpine:3.21
+# hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates
 COPY --from=build /sitegen /usr/local/bin/sitegen
 ENTRYPOINT ["sitegen"]

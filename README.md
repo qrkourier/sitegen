@@ -77,10 +77,27 @@ When configured, the server binds TLS to all active listeners (TCP and Ziti). Th
 
 A container image is published to [GitHub Container Registry](https://ghcr.io/qrkourier/sitegen) on every push to `main` and on every release.
 
+Basic usage (plain HTTP):
+
 ```
-docker run -v ./content:/content:ro -p 8080:8080 \
+docker run --rm -v ./content:/content:ro -p 8080:8080 \
   ghcr.io/qrkourier/sitegen:latest serve -src /content -out /docs -addr :8080
 ```
+
+With ACME TLS and/or OpenZiti, pass credentials via `--env-file` and mount `cert.pem` to persist the certificate across restarts. This avoids hitting the ACME issuer's rate limit by reusing a cached certificate. The server automatically renews the certificate during startup if it is within 30 days of expiry.
+
+```
+docker run --rm --user $(id -u) \
+  --env-file ./.env \
+  --volume ./cert.pem:/cert.pem \
+  --volume ./content:/content:ro \
+  ghcr.io/qrkourier/sitegen:latest serve -src /content -out /docs -addr :8080 -verbose
+```
+
+- `--env-file ./.env` — supplies `DNS_SAN`, `CLOUDFLARE_API_KEY`, `TLS_PRIVKEY`, and optionally `ZITI_IDENTITY` and `ZITI_SERVICE` (see sections above)
+- `--volume ./cert.pem:/cert.pem` — persists the issued certificate so it is reused on subsequent starts
+- `--user $(id -u)` — ensures the container writes `cert.pem` with the host user's ownership
+- Replace `-addr :8080` with `-no-addr` to disable the TCP listener and serve exclusively over OpenZiti
 
 ### Docker Compose
 
@@ -88,7 +105,9 @@ docker run -v ./content:/content:ro -p 8080:8080 \
 docker compose up
 ```
 
-The included `docker-compose.yml` mounts `./content` read-only and serves on port 8080. Uncomment the environment variables to enable OpenZiti or ACME TLS.
+Docker Compose loads `.env` automatically, so the environment variables defined there are available without additional configuration. To enable TLS, mount `cert.pem` for certificate persistence. To enable OpenZiti, add the Ziti environment variables to `.env`. Both can be enabled together.
+
+Uncomment the relevant sections in `docker-compose.yml` to enable TLS, OpenZiti, or both.
 
 ### Kubernetes
 

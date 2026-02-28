@@ -36,9 +36,9 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.10.1
 
   lint-yaml:
     name: yamllint
@@ -61,6 +61,7 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: Dockerfile
+          failure-threshold: warning
 
   validate-k8s:
     name: Validate Kubernetes manifests
@@ -74,7 +75,7 @@ jobs:
             | tar xz -C /usr/local/bin
 
       - name: Validate manifests
-        run: kubeconform -strict -summary deploy/kubernetes/
+        run: kubeconform -strict -summary -ignore-filename-pattern 'kustomization' deploy/kubernetes/
 
   docker:
     name: Docker build

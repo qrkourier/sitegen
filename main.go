@@ -17,7 +17,7 @@ func main() {
 		fs := flag.NewFlagSet("build", flag.ExitOnError)
 		src := fs.String("src", "content", "markdown source (file or directory)")
 		out := fs.String("out", "docs", "output directory")
-		fs.Parse(os.Args[2:])
+		_ = fs.Parse(os.Args[2:])
 		fmt.Println("Building site...")
 		if err := runBuild(*src, *out); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -30,7 +30,7 @@ func main() {
 		addr := fs.String("addr", ":8080", "listen address")
 		noAddr := fs.Bool("no-addr", false, "disable TCP listener (Ziti only)")
 		verbose := fs.Bool("verbose", false, "enable verbose logging")
-		fs.Parse(os.Args[2:])
+		_ = fs.Parse(os.Args[2:])
 		if err := runServe(*src, *out, *addr, *noAddr, *verbose); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
