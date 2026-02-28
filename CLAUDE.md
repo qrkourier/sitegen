@@ -8,7 +8,7 @@ Do not use git to add, commit, push, or amend. Do not modify `.git/config` or an
 
 ## Stack
 
-- Go 1.25, single module, no framework
+- Go (minimum version as specified in `go.mod`), single module, no framework
 - goldmark for markdown, lego for ACME, openziti/sdk-golang for Ziti
 - pfxlog/logrus for structured logging
 - Templates and CSS embedded via `go:embed`
