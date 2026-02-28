@@ -109,7 +109,7 @@ Docker Compose loads `.env` automatically, so the environment variables defined 
 
 #### Container user identity
 
-The `compose.yaml` sets `user: ${PUID}:${PGID}` so the container process runs as the same UID/GID as the host user. This ensures files created inside bind-mounted volumes (e.g. `cert.pem`, output in `site-output`) are owned by the host user, avoiding permission errors.
+The `compose.yaml` sets `user: ${PUID:-1000}:${PGID:-1000}` so the container process runs as the same UID/GID as the host user (defaulting to 1000:1000 if `PUID`/`PGID` are not set). This ensures files created inside bind-mounted volumes (e.g. `cert.pem`, output in `site-output`) are owned by the host user, avoiding permission errors.
 
 Add these to `.env` (or export them in your shell):
 
