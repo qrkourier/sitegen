@@ -1,0 +1,55 @@
+{{define "sidebar-tree"}}{{range .}}{{if .IsDir}}<li class="tree-dir">
+    <details>
+        <summary>{{.Name}}</summary>
+        <ul>{{template "sidebar-tree" .Children}}</ul>
+    </details>
+</li>{{else}}<li class="tree-file"><a href="{{.Path}}">{{.Title}}</a></li>{{end}}{{end}}{{end}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="{{.StaticPath}}/style.css">
+    <script src="{{.StaticPath}}/theme.js"></script>
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-title">sitegen</a>
+            </div>
+            <div class="sidebar-nav">
+                {{if .Tree}}
+                <ul class="tree">
+                    {{template "sidebar-tree" .Tree}}
+                </ul>
+                {{end}}
+            </div>
+            {{template "theme-picker"}}
+        </nav>
+        <main class="content">
+            <article>
+                <h1>{{.Title}}</h1>
+                <div class="index-controls">
+                    <span class="index-intro">Available documents:</span>
+                    <span class="sort-controls">
+                        Sort by:
+                        <button class="sort-btn sort-active" data-sort="name">Name</button>
+                        <button class="sort-btn" data-sort="date">Date</button>
+                    </span>
+                </div>
+                <ul class="page-list" id="page-list">
+                    {{range .Pages}}
+                    <li data-title="{{.Title}}" data-date="{{.ModTime}}">
+                        <a href="{{.Path}}">{{.Title}}</a>
+                        <span class="page-meta">{{.ModTime}} &middot; {{.Size}}</span>
+                    </li>
+                    {{end}}
+                </ul>
+            </article>
+        </main>
+    </div>
+    <script src="{{.StaticPath}}/sort.js"></script>
+</body>
+</html>

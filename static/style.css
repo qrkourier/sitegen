@@ -1,0 +1,641 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --fg: #24292f;
+    --bg: #ffffff;
+    --sidebar-bg: #f6f8fa;
+    --sidebar-border: #d0d7de;
+    --link: #0969da;
+    --link-hover: #0550ae;
+    --code-bg: #f6f8fa;
+    --code-border: #d8dee4;
+    --table-border: #d0d7de;
+    --table-header-bg: #f6f8fa;
+    --table-stripe: #f6f8fa;
+    --hr: #d0d7de;
+    --muted: #57606a;
+    --hover-bg: rgba(9, 105, 218, 0.06);
+}
+
+/* ---- Themes ---- */
+
+[data-theme="dark"] {
+    --fg: #c9d1d9;
+    --bg: #0d1117;
+    --sidebar-bg: #161b22;
+    --sidebar-border: #30363d;
+    --link: #58a6ff;
+    --link-hover: #79c0ff;
+    --code-bg: #161b22;
+    --code-border: #30363d;
+    --table-border: #30363d;
+    --table-header-bg: #161b22;
+    --table-stripe: #161b22;
+    --hr: #21262d;
+    --muted: #8b949e;
+    --hover-bg: rgba(88, 166, 255, 0.1);
+}
+
+[data-theme="monokai"] {
+    --fg: #f8f8f2;
+    --bg: #272822;
+    --sidebar-bg: #1e1f1c;
+    --sidebar-border: #3e3d32;
+    --link: #a6e22e;
+    --link-hover: #e6db74;
+    --code-bg: #1e1f1c;
+    --code-border: #3e3d32;
+    --table-border: #3e3d32;
+    --table-header-bg: #1e1f1c;
+    --table-stripe: #2d2e27;
+    --hr: #3e3d32;
+    --muted: #a59f85;
+    --hover-bg: rgba(166, 226, 46, 0.08);
+}
+
+[data-theme="solarized-light"] {
+    --fg: #657b83;
+    --bg: #fdf6e3;
+    --sidebar-bg: #eee8d5;
+    --sidebar-border: #d3cbb7;
+    --link: #268bd2;
+    --link-hover: #2aa198;
+    --code-bg: #eee8d5;
+    --code-border: #d3cbb7;
+    --table-border: #d3cbb7;
+    --table-header-bg: #eee8d5;
+    --table-stripe: #eee8d5;
+    --hr: #d3cbb7;
+    --muted: #93a1a1;
+    --hover-bg: rgba(38, 139, 210, 0.08);
+}
+
+[data-theme="solarized-dark"] {
+    --fg: #839496;
+    --bg: #002b36;
+    --sidebar-bg: #073642;
+    --sidebar-border: #586e75;
+    --link: #268bd2;
+    --link-hover: #2aa198;
+    --code-bg: #073642;
+    --code-border: #586e75;
+    --table-border: #586e75;
+    --table-header-bg: #073642;
+    --table-stripe: #073642;
+    --hr: #586e75;
+    --muted: #657b83;
+    --hover-bg: rgba(38, 139, 210, 0.12);
+}
+
+[data-theme="solarflare"] {
+    --fg: #a6afb8;
+    --bg: #18262f;
+    --sidebar-bg: #222e38;
+    --sidebar-border: #586875;
+    --link: #eb7b4b;
+    --link-hover: #e66b2b;
+    --code-bg: #222e38;
+    --code-border: #586875;
+    --table-border: #586875;
+    --table-header-bg: #222e38;
+    --table-stripe: #1d2b35;
+    --hr: #586875;
+    --muted: #85939e;
+    --hover-bg: rgba(235, 123, 75, 0.1);
+}
+
+[data-theme="nord"] {
+    --fg: #d8dee9;
+    --bg: #2e3440;
+    --sidebar-bg: #3b4252;
+    --sidebar-border: #4c566a;
+    --link: #88c0d0;
+    --link-hover: #8fbcbb;
+    --code-bg: #3b4252;
+    --code-border: #4c566a;
+    --table-border: #4c566a;
+    --table-header-bg: #3b4252;
+    --table-stripe: #3b4252;
+    --hr: #4c566a;
+    --muted: #81a1c1;
+    --hover-bg: rgba(136, 192, 208, 0.1);
+}
+
+[data-theme="dracula"] {
+    --fg: #f8f8f2;
+    --bg: #282a36;
+    --sidebar-bg: #21222c;
+    --sidebar-border: #44475a;
+    --link: #bd93f9;
+    --link-hover: #ff79c6;
+    --code-bg: #21222c;
+    --code-border: #44475a;
+    --table-border: #44475a;
+    --table-header-bg: #21222c;
+    --table-stripe: #2d2f3b;
+    --hr: #44475a;
+    --muted: #6272a4;
+    --hover-bg: rgba(189, 147, 249, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+}
+
+/* ---- Layout ---- */
+
+.layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.layout-with-toc {
+    grid-template-columns: 280px 1fr 260px;
+    max-width: 1460px;
+}
+
+/* ---- Sidebar ---- */
+
+.sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    padding: 1.5rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fg);
+    text-decoration: none;
+}
+
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ---- Theme picker ---- */
+
+.theme-picker {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.theme-picker label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.theme-select {
+    width: 100%;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+}
+
+/* ---- Right sidebar TOC (document pages) ---- */
+
+.toc-sidebar {
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--sidebar-border);
+    padding: 1.5rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.toc-sidebar-header {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--sidebar-border);
+}
+
+.toc {
+    list-style: none;
+}
+
+.toc li {
+    margin: 0.15rem 0;
+}
+
+.toc a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.84rem;
+    display: block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.toc a:hover {
+    color: var(--link);
+    background: var(--hover-bg);
+}
+
+.toc-h3 {
+    padding-left: 1rem;
+}
+
+/* ---- Sidebar tree (index pages) ---- */
+
+.tree {
+    list-style: none;
+    padding-left: 0;
+}
+
+.tree ul {
+    list-style: none;
+    padding-left: 1rem;
+}
+
+.tree-dir > details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--fg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+    list-style: none;
+}
+
+.tree-dir > details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.tree-dir > details > summary::before {
+    content: "\25b6";
+    display: inline-block;
+    width: 1em;
+    font-size: 0.7em;
+    transition: transform 0.15s ease;
+}
+
+.tree-dir > details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.tree-dir > details > summary:hover {
+    background: var(--hover-bg);
+}
+
+.tree-file {
+    margin: 0.1rem 0;
+}
+
+.tree-file > a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.84rem;
+    display: block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+
+.tree-file > a:hover {
+    color: var(--link);
+    background: var(--hover-bg);
+}
+
+/* ---- Content ---- */
+
+.content {
+    max-width: 920px;
+    padding: 2.5rem 3rem;
+    min-width: 0;
+}
+
+article h1 {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--hr);
+}
+
+article h2 {
+    font-size: 1.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--hr);
+}
+
+article h3 {
+    font-size: 1.25rem;
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+article h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+article p {
+    margin-bottom: 1rem;
+}
+
+article a {
+    color: var(--link);
+    text-decoration: none;
+}
+
+article a:hover {
+    text-decoration: underline;
+    color: var(--link-hover);
+}
+
+article ul, article ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+article li {
+    margin-bottom: 0.25rem;
+}
+
+article li > ul, article li > ol {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+/* ---- Code ---- */
+
+article code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.875em;
+    background: var(--code-bg);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+}
+
+article pre {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+article pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    border-radius: 0;
+}
+
+/* ---- Tables ---- */
+
+article table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    display: block;
+    overflow-x: auto;
+}
+
+article th {
+    background: var(--table-header-bg);
+    font-weight: 600;
+    text-align: left;
+}
+
+article th, article td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--table-border);
+    white-space: nowrap;
+}
+
+article tr:nth-child(even) {
+    background: var(--table-stripe);
+}
+
+/* ---- Misc ---- */
+
+article hr {
+    border: none;
+    border-top: 2px solid var(--hr);
+    margin: 2.5rem 0;
+}
+
+article blockquote {
+    border-left: 4px solid var(--sidebar-border);
+    padding: 0.5rem 1rem;
+    margin: 0 0 1rem;
+    color: var(--muted);
+}
+
+article strong {
+    font-weight: 600;
+}
+
+/* ---- Index page ---- */
+
+.index-controls {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.index-intro {
+    color: var(--muted);
+    font-size: 1.05rem;
+}
+
+.sort-controls {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.sort-btn {
+    background: none;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    margin-left: 0.25rem;
+}
+
+.sort-btn:hover {
+    color: var(--link);
+    border-color: var(--link);
+}
+
+.sort-btn.sort-active {
+    background: var(--link);
+    color: var(--bg);
+    border-color: var(--link);
+}
+
+.page-list {
+    list-style: none;
+    padding: 0;
+}
+
+.page-list li {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--hr);
+}
+
+.page-list li:first-child {
+    border-top: 1px solid var(--hr);
+}
+
+.page-list a {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--link);
+    text-decoration: none;
+}
+
+.page-list a:hover {
+    text-decoration: underline;
+    color: var(--link-hover);
+}
+
+.page-meta {
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* ---- Responsive: tablet (<=1024px) ---- */
+
+@media (max-width: 1024px) {
+    .layout {
+        grid-template-columns: 240px 1fr;
+    }
+
+    .layout-with-toc {
+        grid-template-columns: 240px 1fr;
+    }
+
+    .toc-sidebar {
+        display: none;
+    }
+
+    .content {
+        padding: 2rem;
+    }
+}
+
+/* ---- Responsive: mobile (<=768px) ---- */
+
+@media (max-width: 768px) {
+    .layout, .layout-with-toc {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--sidebar-border);
+        padding: 1rem;
+    }
+
+    .toc-sidebar {
+        display: none;
+    }
+
+    .content {
+        padding: 1.25rem 1rem;
+    }
+
+    article h1 {
+        font-size: 1.5rem;
+    }
+
+    article h2 {
+        font-size: 1.25rem;
+    }
+
+    article h3 {
+        font-size: 1.1rem;
+    }
+
+    article pre {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    article th, article td {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .page-list li {
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .page-meta {
+        font-size: 0.8rem;
+    }
+}
+
+/* ---- Responsive: small mobile (<=480px) ---- */
+
+@media (max-width: 480px) {
+    .content {
+        padding: 1rem 0.75rem;
+    }
+
+    article h1 {
+        font-size: 1.3rem;
+    }
+
+    .page-list a {
+        font-size: 1rem;
+    }
+}

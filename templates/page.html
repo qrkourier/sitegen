@@ -1,0 +1,61 @@
+{{define "sidebar-tree"}}{{range .}}{{if .IsDir}}<li class="tree-dir">
+    <details>
+        <summary>{{.Name}}</summary>
+        <ul>{{template "sidebar-tree" .Children}}</ul>
+    </details>
+</li>{{else}}<li class="tree-file"><a href="{{.Path}}">{{.Title}}</a></li>{{end}}{{end}}{{end}}
+{{define "theme-picker"}}<div class="theme-picker">
+    <label for="theme-select">Theme</label>
+    <select id="theme-select" class="theme-select">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="monokai">Monokai</option>
+        <option value="dracula">Dracula</option>
+        <option value="nord">Nord</option>
+        <option value="solarized-light">Solarized Light</option>
+        <option value="solarized-dark">Solarized Dark</option>
+        <option value="solarflare">Solar Flare</option>
+    </select>
+</div>{{end}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="{{.StaticPath}}/style.css">
+    <script src="{{.StaticPath}}/theme.js"></script>
+</head>
+<body>
+    <div class="layout layout-with-toc">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-title">sitegen</a>
+            </div>
+            <div class="sidebar-nav">
+                {{if .Tree}}
+                <ul class="tree">
+                    {{template "sidebar-tree" .Tree}}
+                </ul>
+                {{end}}
+            </div>
+            {{template "theme-picker"}}
+        </nav>
+        <main class="content">
+            <article>
+                {{.Content}}
+            </article>
+        </main>
+        {{if .TOC}}
+        <aside class="toc-sidebar">
+            <div class="toc-sidebar-header">On this page</div>
+            <ul class="toc">
+                {{range .TOC}}{{if and (ge .Level 2) (le .Level 3)}}
+                <li class="toc-h{{.Level}}"><a href="#{{.ID}}">{{.Title}}</a></li>
+                {{end}}{{end}}
+            </ul>
+        </aside>
+        {{end}}
+    </div>
+</body>
+</html>

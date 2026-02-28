@@ -1,0 +1,6 @@
+/sitegen
+/content/
+/public/
+.env
+/*.json
+/*.pem
