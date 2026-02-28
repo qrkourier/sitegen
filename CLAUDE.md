@@ -31,7 +31,8 @@ go vet ./...                         # static analysis
 | `tls.go` | ACME certificate provisioning (DNS-01 via Cloudflare) |
 | `templates/` | HTML templates (embedded at compile time) |
 | `static/` | CSS and JS (embedded at compile time) |
-| `docker-compose.yml` | Compose config; `.env` loaded automatically |
+| `compose.yaml` | Compose config; `.env` loaded automatically |
+| `compose.watchtower.yaml` | Optional Compose override: Watchtower auto-update |
 | `deploy/kubernetes/` | Kustomize manifests |
 
 ## Environment variables

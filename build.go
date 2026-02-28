@@ -116,8 +116,16 @@ func runBuild(src, outDir string) error {
 		return fmt.Errorf("parsing templates: %w", err)
 	}
 
-	if err := os.RemoveAll(outDir); err != nil {
-		return fmt.Errorf("cleaning output: %w", err)
+	// Clean output directory contents without removing the directory itself,
+	// which may be a mount point.
+	entries, err := os.ReadDir(outDir)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("reading output dir: %w", err)
+	}
+	for _, entry := range entries {
+		if err := os.RemoveAll(filepath.Join(outDir, entry.Name())); err != nil {
+			return fmt.Errorf("cleaning output: %w", err)
+		}
 	}
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("creating output: %w", err)

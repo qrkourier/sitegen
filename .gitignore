@@ -2,5 +2,6 @@
 /content/
 /docs/
 /.env*
+!/.env.example
 /*.json
 /*.pem
