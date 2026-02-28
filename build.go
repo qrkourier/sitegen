@@ -374,7 +374,8 @@ func sortTree(nodes []*TreeNode) {
 		if nodes[i].IsDir != nodes[j].IsDir {
 			return nodes[i].IsDir
 		}
-		return nodes[i].Name < nodes[j].Name
+		// newest first by source file modtime
+		return nodes[i].ModTime > nodes[j].ModTime
 	})
 	for _, n := range nodes {
 		if n.IsDir {

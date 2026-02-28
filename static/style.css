@@ -549,6 +549,30 @@ article strong {
     white-space: nowrap;
 }
 
+/* ---- Footer ---- */
+
+.site-footer {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.site-footer a {
+    color: var(--link);
+    text-decoration: none;
+}
+
+.site-footer a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+.footer-sep {
+    margin: 0 0.5rem;
+}
+
 /* ---- Responsive: tablet (<=1024px) ---- */
 
 @media (max-width: 1024px) {

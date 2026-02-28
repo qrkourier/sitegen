@@ -1,6 +1,6 @@
 /sitegen
 /content/
-/public/
+/docs/
 .env
 /*.json
 /*.pem

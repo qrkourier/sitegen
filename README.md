@@ -15,22 +15,22 @@ go build -o sitegen .
 ### Generate and exit
 
 ```
-./sitegen build -src content -out public
+./sitegen build -src content -out docs
 ```
 
 - `-src` — markdown source: a directory (walks for `*.md` files) or a single `.md` file
-- `-out` — output directory for generated HTML (default: `public`)
+- `-out` — output directory for generated HTML (default: `docs`)
 
 Reads all `.md` files, converts each to HTML with a sidebar TOC, generates an index, and exits.
 
 ### Generate, watch, and serve
 
 ```
-./sitegen serve -src content -out public -addr :8080
+./sitegen serve -src content -out docs -addr :8080
 ```
 
 - `-src` — markdown source (default: `content`)
-- `-out` — output directory (default: `public`)
+- `-out` — output directory (default: `docs`)
 - `-addr` — listen address (default: `:8080`)
 
 Performs an initial build, then watches the source directory for changes. When a markdown file is added, removed, or modified, the site is rebuilt automatically. Refresh your browser to see updates.
@@ -73,6 +73,40 @@ export TLS_PRIVKEY=$(base64 -w0 < key.pem)
 
 When configured, the server binds TLS to all active listeners (TCP and Ziti). The certificate is saved to `cert.pem` in the working directory and reused on subsequent starts if it is still valid for the domain and has more than 30 days until expiry.
 
+## Docker
+
+A container image is published to [GitHub Container Registry](https://ghcr.io/qrkourier/sitegen) on every push to `main` and on every release.
+
+```
+docker run -v ./content:/content:ro -p 8080:8080 \
+  ghcr.io/qrkourier/sitegen:latest serve -src /content -out /docs -addr :8080
+```
+
+### Docker Compose
+
+```
+docker compose up
+```
+
+The included `docker-compose.yml` mounts `./content` read-only and serves on port 8080. Uncomment the environment variables to enable OpenZiti or ACME TLS.
+
+### Kubernetes
+
+Kustomize-ready manifests are in `deploy/kubernetes/`:
+
+```
+kubectl apply -k deploy/kubernetes/
+```
+
+This creates a `sitegen` namespace with a Deployment, Service, and Ingress. Edit `deploy/kubernetes/deployment.yml` to configure the image tag, content source, and optional secrets for Ziti or TLS.
+
+To load content into the cluster as a ConfigMap:
+
+```
+kubectl create configmap sitegen-content \
+  --from-file=content/ -n sitegen
+```
+
 ## When to restart vs. reload
 
 | Change | Action |
@@ -109,7 +143,7 @@ templates/
 static/
   style.css          Stylesheet (embedded at compile time)
 content/             Markdown source files (not committed)
-public/              Generated output (not committed)
+docs/               Generated output (not committed)
 ```
 
 ## Dependencies

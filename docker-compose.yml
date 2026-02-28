@@ -1,0 +1,22 @@
+services:
+  sitegen:
+    image: ghcr.io/qrkourier/sitegen:latest
+    # build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./content:/content:ro
+      - site-output:/docs
+    command: ["serve", "-src", "/content", "-out", "/docs", "-addr", ":8080"]
+    environment:
+      # Optional: OpenZiti overlay
+      # ZITI_IDENTITY: "${ZITI_IDENTITY}"
+      # ZITI_SERVICE: "${ZITI_SERVICE}"
+      # Optional: ACME TLS
+      # DNS_SAN: "${DNS_SAN}"
+      # CLOUDFLARE_API_KEY: "${CLOUDFLARE_API_KEY}"
+      # TLS_PRIVKEY: "${TLS_PRIVKEY}"
+    restart: unless-stopped
+
+volumes:
+  site-output:

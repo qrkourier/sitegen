@@ -16,7 +16,7 @@ func main() {
 	case "build":
 		fs := flag.NewFlagSet("build", flag.ExitOnError)
 		src := fs.String("src", "content", "markdown source (file or directory)")
-		out := fs.String("out", "public", "output directory")
+		out := fs.String("out", "docs", "output directory")
 		fs.Parse(os.Args[2:])
 		fmt.Println("Building site...")
 		if err := runBuild(*src, *out); err != nil {
@@ -26,7 +26,7 @@ func main() {
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
 		src := fs.String("src", "content", "markdown source (file or directory)")
-		out := fs.String("out", "public", "output directory")
+		out := fs.String("out", "docs", "output directory")
 		addr := fs.String("addr", ":8080", "listen address")
 		noAddr := fs.Bool("no-addr", false, "disable TCP listener (Ziti only)")
 		verbose := fs.Bool("verbose", false, "enable verbose logging")
