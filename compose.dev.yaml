@@ -3,7 +3,7 @@ services:
     build: .
     ports: !override []
     volumes: !override
-      - ~/.claude/plans:/content:ro
+      - ./content:/content:ro
       - site-output:/docs
       - ./cert.pem:/cert.pem
     command: !override [ "serve", "-src", "/content", "-out", "/docs", "-no-addr", "-verbose" ]
