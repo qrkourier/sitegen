@@ -1,6 +1,6 @@
 # sitegen
 
-Static site generator in Go. Converts markdown to browseable HTML with sidebar TOC, GFM tables, security headers. Optionally serves over OpenZiti overlay and/or ACME TLS.
+Static site generator in Go. Converts markdown to browsable HTML with sidebar TOC, GFM tables, security headers. Optionally serves over OpenZiti overlay and/or ACME TLS.
 
 ## Git policy
 
