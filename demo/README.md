@@ -4,7 +4,7 @@ Welcome to the **sitegen** demo site. This is a static site generated from markd
 
 ## What is sitegen?
 
-A single-binary static site generator written in Go. It converts markdown files into a browseable HTML site with:
+A single-binary static site generator written in Go. It converts markdown files into a browsable HTML site with:
 
 - Sidebar table-of-contents navigation
 - GFM table support

@@ -118,9 +118,26 @@ func runBuild(src, outDir string) error {
 
 	// Clean output directory contents without removing the directory itself,
 	// which may be a mount point.
-	entries, err := os.ReadDir(outDir)
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("reading output dir: %w", err)
+	var entries []os.DirEntry
+	info, err = os.Stat(outDir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("checking output dir: %w", err)
+		}
+	} else {
+		if !info.IsDir() {
+			// If the output path exists but is not a directory, remove it so we can
+			// recreate it as a directory, matching the behavior of the previous
+			// implementation that used os.RemoveAll(outDir).
+			if err := os.Remove(outDir); err != nil {
+				return fmt.Errorf("removing non-directory output path %q: %w", outDir, err)
+			}
+		} else {
+			entries, err = os.ReadDir(outDir)
+			if err != nil {
+				return fmt.Errorf("reading output dir: %w", err)
+			}
+		}
 	}
 	for _, entry := range entries {
 		if err := os.RemoveAll(filepath.Join(outDir, entry.Name())); err != nil {

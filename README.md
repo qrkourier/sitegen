@@ -109,7 +109,7 @@ Docker Compose loads `.env` automatically, so the environment variables defined 
 
 #### Container user identity
 
-The `compose.yaml` sets `user: ${PUID}:${PGID}` so the container process runs as the same UID/GID as the host user. This ensures files created inside bind-mounted volumes (e.g. `cert.pem`, output in `site-output`) are owned by the host user, avoiding permission errors.
+The `compose.yaml` sets `user: ${PUID:-1000}:${PGID:-1000}` so the container process runs as the same UID/GID as the host user (defaulting to 1000:1000 if `PUID`/`PGID` are not set). This ensures files created inside bind-mounted volumes (e.g. `cert.pem`, output in `site-output`) are owned by the host user, avoiding permission errors.
 
 Add these to `.env` (or export them in your shell):
 
@@ -127,7 +127,7 @@ id -g   # prints your GID  (typically 1000)
 
 Both default to `1000` if unset, which matches the first non-root user on most Linux systems.
 
-Uncomment the relevant sections in `compose.yaml` to enable TLS, OpenZiti, or both.
+To persist a TLS certificate, uncomment the optional `cert.pem` volume section in `compose.yaml`. OpenZiti is configured via `.env` variables and does not require uncommenting any sections in `compose.yaml`.
 
 #### Local development build
 

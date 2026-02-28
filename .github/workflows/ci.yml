@@ -50,7 +50,7 @@ jobs:
         run: pip install yamllint
 
       - name: Lint YAML
-        run: yamllint -d relaxed .github/ compose.yaml compose.watchtower.yaml deploy/
+        run: yamllint -d relaxed .github/ compose.yaml compose.dev.yaml compose.watchtower.yaml deploy/
 
   lint-dockerfile:
     name: hadolint
