@@ -98,6 +98,65 @@ func TestBuildNonMarkdownFile(t *testing.T) {
 	}
 }
 
+func TestBuildCleansPreExistingOutput(t *testing.T) {
+	src := t.TempDir()
+	out := t.TempDir()
+	os.WriteFile(filepath.Join(src, "doc.md"), []byte("# Doc"), 0644)
+
+	// Plant stale files in the output directory before building.
+	staleFile := filepath.Join(out, "stale.html")
+	staleDir := filepath.Join(out, "olddir")
+	os.WriteFile(staleFile, []byte("old"), 0644)
+	os.MkdirAll(staleDir, 0755)
+	os.WriteFile(filepath.Join(staleDir, "nested.html"), []byte("old"), 0644)
+
+	if err := runBuild(src, out); err != nil {
+		t.Fatalf("runBuild: %v", err)
+	}
+
+	// The output directory itself must still exist (could be a mount point).
+	info, err := os.Stat(out)
+	if err != nil || !info.IsDir() {
+		t.Fatal("output directory should still exist")
+	}
+	// Stale contents must be gone.
+	if _, err := os.Stat(staleFile); !os.IsNotExist(err) {
+		t.Error("stale file should have been removed")
+	}
+	if _, err := os.Stat(staleDir); !os.IsNotExist(err) {
+		t.Error("stale directory should have been removed")
+	}
+	// Fresh output must be present.
+	if _, err := os.Stat(filepath.Join(out, "doc.html")); err != nil {
+		t.Error("expected doc.html to exist after build")
+	}
+}
+
+func TestBuildReplacesFileWithDir(t *testing.T) {
+	src := t.TempDir()
+	os.WriteFile(filepath.Join(src, "doc.md"), []byte("# Doc"), 0644)
+
+	// Create a regular file where the output directory should be.
+	parent := t.TempDir()
+	out := filepath.Join(parent, "output")
+	os.WriteFile(out, []byte("I am a file, not a directory"), 0644)
+
+	if err := runBuild(src, out); err != nil {
+		t.Fatalf("runBuild: %v", err)
+	}
+
+	info, err := os.Stat(out)
+	if err != nil {
+		t.Fatalf("output path should exist: %v", err)
+	}
+	if !info.IsDir() {
+		t.Error("output path should be a directory after build")
+	}
+	if _, err := os.Stat(filepath.Join(out, "doc.html")); err != nil {
+		t.Error("expected doc.html to exist after build")
+	}
+}
+
 func TestSlugify(t *testing.T) {
 	tests := []struct {
 		in, want string

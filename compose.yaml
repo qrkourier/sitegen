@@ -26,13 +26,13 @@ services:
     command: [ "serve", "-src", "/content", "-out", "/docs", "-addr", ":8080" ]
     environment:
       # Optional: OpenZiti overlay — define in .env to enable.
-      ZITI_IDENTITY:
-      ZITI_SERVICE:
       # Optional: ACME TLS — define in .env to enable.
       # Also uncomment the cert.pem volume above to persist the certificate.
-      DNS_SAN:
-      CLOUDFLARE_API_KEY:
-      TLS_PRIVKEY:
+      - ZITI_IDENTITY
+      - ZITI_SERVICE
+      - DNS_SAN
+      - CLOUDFLARE_API_KEY
+      - TLS_PRIVKEY
     restart: unless-stopped
 
 volumes:
