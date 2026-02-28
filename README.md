@@ -107,7 +107,71 @@ docker compose up
 
 Docker Compose loads `.env` automatically, so the environment variables defined there are available without additional configuration. To enable TLS, mount `cert.pem` for certificate persistence. To enable OpenZiti, add the Ziti environment variables to `.env`. Both can be enabled together.
 
-Uncomment the relevant sections in `docker-compose.yml` to enable TLS, OpenZiti, or both.
+#### Container user identity
+
+The `compose.yaml` sets `user: ${PUID:-1000}:${PGID:-1000}` so the container process runs as the same UID/GID as the host user (defaulting to 1000:1000 if `PUID`/`PGID` are not set). This ensures files created inside bind-mounted volumes (e.g. `cert.pem`, output in `site-output`) are owned by the host user, avoiding permission errors.
+
+Add these to `.env` (or export them in your shell):
+
+```
+PUID=1000
+PGID=1000
+```
+
+To find your values:
+
+```bash
+id -u   # prints your UID  (typically 1000)
+id -g   # prints your GID  (typically 1000)
+```
+
+Both default to `1000` if unset, which matches the first non-root user on most Linux systems.
+
+To persist a TLS certificate, uncomment the optional `cert.pem` volume section in `compose.yaml`. OpenZiti is configured via `.env` variables and does not require uncommenting any sections in `compose.yaml`.
+
+#### Local development build
+
+To build and run from local source instead of the published image, include the `compose.dev.yaml` override:
+
+```
+docker compose -f compose.yaml -f compose.dev.yaml up --build
+```
+
+Or for a one-off run:
+
+```
+docker compose -f compose.yaml -f compose.dev.yaml run --rm --build sitegen serve -src /content -out /docs -addr :8080
+```
+
+This overrides the `image` directive with `build: .`, so Docker Compose builds the image from the local Dockerfile.
+
+#### Selecting compose files with `COMPOSE_FILE`
+
+Instead of passing `-f` flags on every command, set `COMPOSE_FILE` in `.env` (or export it in your shell) to define which files compose loads by default:
+
+```
+COMPOSE_FILE=compose.yaml:compose.dev.yaml
+```
+
+Files are merged left to right, so later files override earlier ones. With this set, `docker compose up --build` is all you need — no `-f` flags required.
+
+Common combinations:
+
+| `COMPOSE_FILE` | Use case |
+|---|---|
+| `compose.yaml` | Default — published image, plain HTTP |
+| `compose.yaml:compose.dev.yaml` | Local build from source |
+| `compose.yaml:compose.watchtower.yaml` | Published image with auto-update |
+
+#### Auto-update with Watchtower
+
+To automatically pull new container images and restart the service, include the Watchtower override file:
+
+```
+docker compose -f compose.yaml -f compose.watchtower.yaml up -d
+```
+
+Watchtower monitors for new `ghcr.io/qrkourier/sitegen:latest` images every 5 minutes, pulls updates, and restarts the container. Only the `sitegen` service is watched (label-based filtering). Old images are cleaned up automatically.
 
 ### Kubernetes
 

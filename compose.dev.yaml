@@ -1,0 +1,8 @@
+services:
+  sitegen:
+    build: .
+    ports: !override []
+    volumes: !override
+      - ./content:/content:ro
+      - site-output:/docs
+      - ./cert.pem:/cert.pem

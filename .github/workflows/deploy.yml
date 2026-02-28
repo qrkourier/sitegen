@@ -27,7 +27,7 @@ jobs:
         run: go build -o sitegen .
 
       - name: Generate site
-        run: ./sitegen build -src README.md -out docs
+        run: ./sitegen build -src demo -out docs
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
