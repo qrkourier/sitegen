@@ -84,9 +84,11 @@ func obtainTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Cloudflare DNS provider: %w", err)
 	}
-	client.Challenge.SetDNS01Provider(provider,
+	if err := client.Challenge.SetDNS01Provider(provider,
 		dns01.AddRecursiveNameservers([]string{"1.1.1.1:53", "8.8.8.8:53"}),
-	)
+	); err != nil {
+		return nil, fmt.Errorf("failed to set DNS-01 provider: %w", err)
+	}
 
 	reg, err := client.Registration.Register(registration.RegisterOptions{
 		TermsOfServiceAgreed: true,

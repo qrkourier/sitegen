@@ -15,10 +15,21 @@ linters:
   settings:
     errcheck:
       check-type-assertions: true
+      exclude-functions:
+        - (io.Closer).Close
+        - (net/http.ResponseWriter).Write
     gosec:
       excludes:
-        - G104
-        - G304
+        - G104  # unhandled errors in deferred calls
+        - G114  # http.Serve without timeouts (acceptable for local dev server)
+        - G203  # template.HTML usage (intentional for rendered markdown)
+        - G301  # 0755 dir perms (standard for generated output)
+        - G304  # file inclusion via variable (expected for sitegen)
+        - G306  # 0644 file perms (standard for generated output)
 
   exclusions:
     generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck

@@ -210,10 +210,10 @@ func runBuild(src, outDir string) error {
 			return fmt.Errorf("creating %s: %w", outPath, err)
 		}
 		if err := tmpl.ExecuteTemplate(f, "page.html", page); err != nil {
-			f.Close()
+			_ = f.Close()
 			return fmt.Errorf("rendering template for %s: %w", pp.mdPath, err)
 		}
-		f.Close()
+		_ = f.Close()
 
 		outInfo, _ := os.Stat(outPath)
 		var renderedSize int64
@@ -238,10 +238,10 @@ func runBuild(src, outDir string) error {
 		return fmt.Errorf("creating index.html: %w", err)
 	}
 	if err := tmpl.ExecuteTemplate(f, "index.html", indexData); err != nil {
-		f.Close()
+		_ = f.Close()
 		return fmt.Errorf("rendering index: %w", err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	fmt.Printf("  index.html\n")
 	fmt.Printf("Built %d page(s) -> %s/\n", len(pages), outDir)
@@ -252,7 +252,7 @@ func extractMeta(doc ast.Node, source []byte) (string, []TOCEntry) {
 	var title string
 	var toc []TOCEntry
 
-	ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}

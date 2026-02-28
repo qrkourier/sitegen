@@ -137,7 +137,7 @@ func startZiti(handler http.Handler, tlsConfig *tls.Config) (func(), error) {
 	}()
 
 	return func() {
-		listener.Close()
+		_ = listener.Close()
 		ctx.Close()
 	}, nil
 }
@@ -185,7 +185,7 @@ func watchAndRebuild(srcDir, outDir string) {
 			mu.Unlock()
 			continue
 		}
-		building = true
+		building = true //nolint:ineffassign // read on next iteration under mu.Lock
 		mu.Unlock()
 
 		fmt.Println("Change detected, rebuilding...")
@@ -211,7 +211,7 @@ type fileEntry struct {
 // files in the directory tree.
 func snapshotDir(dir string) map[string]fileEntry {
 	snap := make(map[string]fileEntry)
-	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
 		}
