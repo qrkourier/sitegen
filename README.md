@@ -2,6 +2,8 @@
 
 Static HTML generator written in Go. Converts markdown files to a browseable site with table-of-contents navigation, GFM table support, and security headers.
 
+**Demo:** <https://qrk.us/sitegen/>
+
 ## Build
 
 Requires Go 1.22+.
