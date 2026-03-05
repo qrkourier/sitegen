@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -39,6 +40,9 @@ type PageData struct {
 	TOC        []TOCEntry
 	Tree       []*TreeNode
 	StaticPath string
+	RootPath   string
+	WriteMode  bool
+	MdPath     string // relative markdown source path (write mode only)
 }
 
 type PageMeta struct {
@@ -63,9 +67,32 @@ type IndexData struct {
 	Pages      []PageMeta
 	Tree       []*TreeNode
 	StaticPath string
+	RootPath   string
 }
 
-func runBuild(src, outDir string) error {
+// BuildOptions controls optional behaviors of the build pipeline.
+type BuildOptions struct {
+	WriteMode bool // inject editor UI into generated pages
+}
+
+type parsedPage struct {
+	title    string
+	toc      []TOCEntry
+	html     string
+	htmlRel  string
+	urlPath  string
+	mdPath   string
+	mdRel    string // relative to source root
+	srcInfo  os.FileInfo
+	source   []byte
+	isReadme bool
+}
+
+func runBuild(src, outDir string, opts ...BuildOptions) error {
+	var opt BuildOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 	info, err := os.Stat(src)
 	if err != nil {
 		return fmt.Errorf("source not found: %w", err)
@@ -153,19 +180,10 @@ func runBuild(src, outDir string) error {
 	}
 
 	// First pass: collect page metadata and parsed content for tree building
-	type parsedPage struct {
-		title     string
-		toc       []TOCEntry
-		html      string
-		htmlRel   string
-		urlPath   string
-		mdPath    string
-		srcInfo   os.FileInfo
-	}
-
 	var parsed []parsedPage
 	var pages []PageMeta
 
+	readmePath := filepath.Join(baseDir, "README.md")
 	for _, mdPath := range mdFiles {
 		rel, _ := filepath.Rel(baseDir, mdPath)
 		htmlRel := strings.TrimSuffix(rel, filepath.Ext(rel)) + ".html"
@@ -194,36 +212,57 @@ func runBuild(src, outDir string) error {
 			return fmt.Errorf("rendering %s: %w", mdPath, err)
 		}
 
+		// Detect root README.md — it becomes index.html instead of a regular page.
+		isReadme := filepath.Clean(mdPath) == filepath.Clean(readmePath)
+
 		parsed = append(parsed, parsedPage{
-			title:   title,
-			toc:     toc,
-			html:    htmlBuf.String(),
-			htmlRel: htmlRel,
-			urlPath: urlPath,
-			mdPath:  mdPath,
-			srcInfo: srcInfo,
+			title:    title,
+			toc:      toc,
+			html:     htmlBuf.String(),
+			htmlRel:  htmlRel,
+			urlPath:  urlPath,
+			mdPath:   mdPath,
+			mdRel:    filepath.ToSlash(rel),
+			srcInfo:  srcInfo,
+			source:   source,
+			isReadme: isReadme,
 		})
 
-		pages = append(pages, PageMeta{
-			Title:   title,
-			Path:    urlPath,
-			ModTime: srcInfo.ModTime().Format(time.DateOnly),
-		})
+		// Exclude the root README from the page list and sidebar tree;
+		// it will be rendered as index.html separately.
+		if !isReadme {
+			pages = append(pages, PageMeta{
+				Title:   title,
+				Path:    urlPath,
+				ModTime: srcInfo.ModTime().Format(time.DateOnly),
+			})
+		}
 	}
 
 	tree := buildTree(pages)
 
-	// Second pass: render pages with nav tree
-	for i, pp := range parsed {
+	// Second pass: render regular pages (skip README — handled below)
+	var readmePage *parsedPage
+	pageIdx := 0
+	for _, pp := range parsed {
+		if pp.isReadme {
+			cp := pp
+			readmePage = &cp
+			continue
+		}
+
 		depth := strings.Count(pp.urlPath, "/")
-		staticPrefix := strings.Repeat("../", depth) + "static"
+		rootPrefix := strings.Repeat("../", depth)
 
 		page := PageData{
 			Title:      pp.title,
 			Content:    template.HTML(pp.html),
 			TOC:        pp.toc,
-			Tree:       tree,
-			StaticPath: staticPrefix,
+			Tree:       prefixTreePaths(tree, rootPrefix),
+			StaticPath: rootPrefix + "static",
+			RootPath:   rootPrefix,
+			WriteMode:  opt.WriteMode,
+			MdPath:     pp.mdRel,
 		}
 
 		outPath := filepath.Join(outDir, pp.htmlRel)
@@ -245,31 +284,63 @@ func runBuild(src, outDir string) error {
 		if outInfo != nil {
 			renderedSize = outInfo.Size()
 		}
-		pages[i].Size = humanBytes(renderedSize)
+		pages[pageIdx].Size = humanBytes(renderedSize)
+		pageIdx++
 
 		rel, _ := filepath.Rel(baseDir, pp.mdPath)
 		fmt.Printf("  %s -> %s\n", rel, pp.htmlRel)
 	}
 
-	indexData := IndexData{
-		Title:      "Documents",
-		Pages:      pages,
-		Tree:       tree,
-		StaticPath: "static",
-	}
+	// Render index.html — use README.md content if present, otherwise
+	// fall back to the auto-generated page list.
 	indexPath := filepath.Join(outDir, "index.html")
-	f, err := os.Create(indexPath)
-	if err != nil {
-		return fmt.Errorf("creating index.html: %w", err)
-	}
-	if err := tmpl.ExecuteTemplate(f, "index.html", indexData); err != nil {
+	if readmePage != nil {
+		page := PageData{
+			Title:      readmePage.title,
+			Content:    template.HTML(readmePage.html),
+			TOC:        readmePage.toc,
+			Tree:       tree,
+			StaticPath: "static",
+			RootPath:   "",
+			WriteMode:  opt.WriteMode,
+			MdPath:     readmePage.mdRel,
+		}
+		f, err := os.Create(indexPath)
+		if err != nil {
+			return fmt.Errorf("creating index.html: %w", err)
+		}
+		if err := tmpl.ExecuteTemplate(f, "page.html", page); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("rendering index: %w", err)
+		}
 		_ = f.Close()
-		return fmt.Errorf("rendering index: %w", err)
+	} else {
+		indexData := IndexData{
+			Title:      "Documents",
+			Pages:      pages,
+			Tree:       tree,
+			StaticPath: "static",
+			RootPath:   "",
+		}
+		f, err := os.Create(indexPath)
+		if err != nil {
+			return fmt.Errorf("creating index.html: %w", err)
+		}
+		if err := tmpl.ExecuteTemplate(f, "index.html", indexData); err != nil {
+			_ = f.Close()
+			return fmt.Errorf("rendering index: %w", err)
+		}
+		_ = f.Close()
 	}
-	_ = f.Close()
 
 	fmt.Printf("  index.html\n")
-	fmt.Printf("Built %d page(s) -> %s/\n", len(pages), outDir)
+
+	// Write search index for client-side filtering.
+	if err := writeSearchIndex(outDir, parsed); err != nil {
+		return fmt.Errorf("writing search index: %w", err)
+	}
+
+	fmt.Printf("Built %d page(s) -> %s/\n", len(parsed), outDir)
 	return nil
 }
 
@@ -407,6 +478,62 @@ func sortTree(nodes []*TreeNode) {
 			sortTree(n.Children)
 		}
 	}
+}
+
+func prefixTreePaths(nodes []*TreeNode, prefix string) []*TreeNode {
+	if prefix == "" {
+		return nodes
+	}
+	out := make([]*TreeNode, len(nodes))
+	for i, n := range nodes {
+		cp := *n
+		if !cp.IsDir {
+			cp.Path = prefix + cp.Path
+		}
+		if len(n.Children) > 0 {
+			cp.Children = prefixTreePaths(n.Children, prefix)
+		}
+		out[i] = &cp
+	}
+	return out
+}
+
+type searchEntry struct {
+	Title   string `json:"t"`
+	Path    string `json:"p"`
+	Content string `json:"c"`
+}
+
+func writeSearchIndex(outDir string, pages []parsedPage) error {
+	var entries []searchEntry
+	for _, pp := range pages {
+		path := pp.urlPath
+		if pp.isReadme {
+			path = "index.html"
+		}
+		content := stripMarkdown(string(pp.source))
+		if len(content) > 2000 {
+			content = content[:2000]
+		}
+		entries = append(entries, searchEntry{
+			Title:   pp.title,
+			Path:    path,
+			Content: content,
+		})
+	}
+	data, err := json.Marshal(entries)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(outDir, "search-index.json"), data, 0644)
+}
+
+var mdSyntax = regexp.MustCompile(`(?m)^#{1,6}\s+|[*_` + "`" + `~]+|\[([^\]]*)\]\([^)]*\)|^[>\-]\s+|^\d+\.\s+|!\[([^\]]*)\]\([^)]*\)`)
+
+func stripMarkdown(s string) string {
+	s = mdSyntax.ReplaceAllString(s, "$1$2")
+	s = strings.Join(strings.Fields(s), " ")
+	return s
 }
 
 func writeStaticAssets(outDir string) error {

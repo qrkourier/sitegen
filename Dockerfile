@@ -14,5 +14,5 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates
 COPY --from=build /sitegen /usr/local/bin/sitegen
 ENTRYPOINT ["sitegen"]
-CMD ["serve", "-addr", ":8080"]
+CMD ["serve", "--addr", ":8080"]
 EXPOSE 8080

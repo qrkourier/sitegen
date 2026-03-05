@@ -15,7 +15,7 @@ func TestSecurityHeaders(t *testing.T) {
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	handler := securityHeaders(inner)
+	handler := securityHeaders(inner, false)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()
@@ -39,7 +39,7 @@ func TestSecurityHeadersPreservesBody(t *testing.T) {
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello"))
 	})
-	handler := securityHeaders(inner)
+	handler := securityHeaders(inner, false)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	rec := httptest.NewRecorder()

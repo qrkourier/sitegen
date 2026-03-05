@@ -21,24 +21,37 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func runServe(srcDir, outDir, addr string, noAddr, verbose bool) error {
+func runServe(srcDir, outDir, addr string, addrSet, noAddr, writeMode, verbose bool) error {
 	if verbose {
 		pfxlog.GlobalInit(logrus.DebugLevel, pfxlog.DefaultOptions().SetTrimPrefix("github.com/openziti/"))
 	} else {
 		logrus.SetLevel(logrus.PanicLevel)
 	}
 
+	buildOpts := BuildOptions{WriteMode: writeMode}
+
 	// Initial build
 	fmt.Println("Building site...")
-	if err := runBuild(srcDir, outDir); err != nil {
+	if err := runBuild(srcDir, outDir, buildOpts); err != nil {
 		return fmt.Errorf("initial build: %w", err)
 	}
 
 	// Start watcher
-	go watchAndRebuild(srcDir, outDir)
+	go watchAndRebuild(srcDir, outDir, buildOpts)
 
+	mux := http.NewServeMux()
+
+	// Register editor API routes only in write mode
+	if writeMode {
+		fmt.Println("Write mode ENABLED — editor API active")
+		registerEditorAPI(mux, srcDir)
+	}
+
+	// File server for the built output
 	fileServer := http.FileServer(http.Dir(outDir))
-	handler := securityHeaders(fileServer)
+	mux.Handle("/", fileServer)
+
+	handler := securityHeaders(mux, writeMode)
 
 	// Obtain TLS config if ACME env vars are set
 	tlsConfig, err := obtainTLSConfig()
@@ -46,8 +59,24 @@ func runServe(srcDir, outDir, addr string, noAddr, verbose bool) error {
 		return fmt.Errorf("TLS setup: %w", err)
 	}
 
-	// Start TCP listener unless -no-addr is set
-	if !noAddr {
+	// Start overlay listeners first to determine whether TCP is needed.
+	zitiCleanup, err := startZiti(handler, tlsConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ziti: %v\n", err)
+	}
+
+	zrokCleanup, err := startZrok(handler, tlsConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "zrok: %v\n", err)
+	}
+
+	// When an overlay is active, skip the TCP listener unless -addr was
+	// explicitly provided. When no overlay is configured, always listen on
+	// the default (or given) address.
+	hasOverlay := zitiCleanup != nil || zrokCleanup != nil
+	listenTCP := !noAddr && (addrSet || !hasOverlay)
+
+	if listenTCP {
 		ln, err := net.Listen("tcp", addr)
 		if err != nil {
 			return fmt.Errorf("TCP listen: %w", err)
@@ -64,20 +93,12 @@ func runServe(srcDir, outDir, addr string, noAddr, verbose bool) error {
 			}
 		}()
 	}
+
+	if !listenTCP && !hasOverlay {
+		return fmt.Errorf("no listeners active: set ZITI or ZROK env vars, or pass --addr")
+	}
+
 	fmt.Printf("Watching %s for changes\n", srcDir)
-
-	// Start Ziti listener if configured
-	zitiCleanup, err := startZiti(handler, tlsConfig)
-	if err != nil {
-		if noAddr {
-			return fmt.Errorf("ziti: %w", err)
-		}
-		fmt.Fprintf(os.Stderr, "Ziti: %v\n", err)
-	}
-
-	if noAddr && zitiCleanup == nil {
-		return fmt.Errorf("-no-addr requires ZITI_IDENTITY and ZITI_SERVICE to be set")
-	}
 
 	// Block until shutdown signal
 	sigCh := make(chan os.Signal, 1)
@@ -87,6 +108,9 @@ func runServe(srcDir, outDir, addr string, noAddr, verbose bool) error {
 
 	if zitiCleanup != nil {
 		zitiCleanup()
+	}
+	if zrokCleanup != nil {
+		zrokCleanup()
 	}
 
 	return nil
@@ -151,19 +175,31 @@ func isClosedErr(err error) bool {
 	return strings.Contains(err.Error(), "use of closed network connection")
 }
 
-func securityHeaders(next http.Handler) http.Handler {
+func securityHeaders(next http.Handler, writeMode bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'")
 		w.Header().Set("Referrer-Policy", "no-referrer")
+
+		if writeMode {
+			// In write mode, relax CSP to allow Vditor editor from CDN
+			w.Header().Set("Content-Security-Policy",
+				"default-src 'self'; "+
+					"script-src 'self' https://unpkg.com; "+
+					"style-src 'self' 'unsafe-inline' https://unpkg.com; "+
+					"font-src 'self' https://unpkg.com; "+
+					"img-src 'self' data: https:")
+		} else {
+			w.Header().Set("Content-Security-Policy", "default-src 'self'")
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
 
 // watchAndRebuild polls the source directory for changes and rebuilds when
 // any markdown file is added, removed, or modified.
-func watchAndRebuild(srcDir, outDir string) {
+func watchAndRebuild(srcDir, outDir string, opts ...BuildOptions) {
 	var (
 		mu        sync.Mutex
 		building  bool
@@ -189,7 +225,7 @@ func watchAndRebuild(srcDir, outDir string) {
 		mu.Unlock()
 
 		fmt.Println("Change detected, rebuilding...")
-		if err := runBuild(srcDir, outDir); err != nil {
+		if err := runBuild(srcDir, outDir, opts...); err != nil {
 			fmt.Fprintf(os.Stderr, "rebuild error: %v\n", err)
 		} else {
 			fmt.Println("Rebuild complete")

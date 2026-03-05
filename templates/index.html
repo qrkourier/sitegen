@@ -12,14 +12,16 @@
     <title>{{.Title}}</title>
     <link rel="stylesheet" href="{{.StaticPath}}/style.css">
     <script src="{{.StaticPath}}/theme.js"></script>
+    <script>window.rootPath="{{.RootPath}}";</script>
 </head>
 <body>
     <div class="layout">
         <nav class="sidebar">
             <div class="sidebar-header">
-                <a href="/" class="sidebar-title">sitegen</a>
+                <a href="{{.RootPath}}." class="sidebar-title">sitegen</a>
             </div>
             <div class="sidebar-nav">
+                <input type="search" id="sidebar-filter" class="sidebar-filter" placeholder="Filter pages...">
                 {{if .Tree}}
                 <ul class="tree">
                     {{template "sidebar-tree" .Tree}}
@@ -51,10 +53,11 @@
         </main>
     </div>
     <footer class="site-footer">
-        <a href="/README.html">How to Use sitegen</a>
+        <a href="{{.RootPath}}index.html">Home</a>
         <span class="footer-sep">&middot;</span>
         <a href="https://github.com/qrkourier/sitegen">GitHub</a>
     </footer>
     <script src="{{.StaticPath}}/sort.js"></script>
+    <script src="{{.StaticPath}}/filter.js"></script>
 </body>
 </html>

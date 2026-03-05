@@ -20,6 +20,25 @@ docker compose up
 
 Docker Compose loads `.env` automatically for optional TLS and OpenZiti credentials.
 
+Several Compose override files are available:
+
+| Override | Use case |
+|---|---|
+| `compose.dev.yaml` | Local build from source |
+| `compose.watchtower.yaml` | Published image with auto-update |
+| `compose.zrok.yaml` | Public share via zrok overlay |
+| `compose.local.yaml` | OpenZiti overlay, no TCP |
+
+## zrok
+
+Serve via a [zrok](https://zrok.io/) public share — no VPS or port forwarding needed:
+
+```bash
+docker compose -f compose.yaml -f compose.zrok.yaml up
+```
+
+Set `ZROK2_ENABLE_TOKEN` in `.env`. The container auto-enables the zrok environment on first start and prints the public URL.
+
 ## Kubernetes
 
 Kustomize-ready manifests are provided:

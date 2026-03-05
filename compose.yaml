@@ -17,14 +17,18 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./content:/content:ro
+      - ./content:/content:${CONTENT_VOLUME_MODE:-ro}
       - site-output:/docs
       # Mount cert.pem to persist the ACME certificate across restarts
       # and avoid hitting the issuer's rate limit. The server renews
       # automatically if the cert is within 30 days of expiry.
       # - ./cert.pem:/cert.pem
-    command: [ "serve", "-src", "/content", "-out", "/docs", "-addr", ":8080" ]
+    command: [ "serve", "--src", "/content", "--out", "/docs", "--addr", ":8080" ]
     environment:
+      # Set WRITE_MODE=true and CONTENT_VOLUME_MODE=rw in .env to
+      # enable the markdown editor. When unset, the content volume is
+      # read-only and no editor endpoints are exposed.
+      - WRITE_MODE
       # Optional: OpenZiti overlay — define in .env to enable.
       # Optional: ACME TLS — define in .env to enable.
       # Also uncomment the cert.pem volume above to persist the certificate.

@@ -3,6 +3,6 @@ services:
     build: .
     ports: !override []
     volumes: !override
-      - ./content:/content:ro
+      - ./content:/content:${CONTENT_VOLUME_MODE:-ro}
       - site-output:/docs
       - ./cert.pem:/cert.pem
