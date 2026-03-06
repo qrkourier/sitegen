@@ -7,6 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is set at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
 	root := &cobra.Command{
 		Use:   "sitegen",

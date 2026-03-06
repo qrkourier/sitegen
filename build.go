@@ -43,6 +43,7 @@ type PageData struct {
 	RootPath   string
 	WriteMode  bool
 	MdPath     string // relative markdown source path (write mode only)
+	Version    string
 }
 
 type PageMeta struct {
@@ -68,6 +69,7 @@ type IndexData struct {
 	Tree       []*TreeNode
 	StaticPath string
 	RootPath   string
+	Version    string
 }
 
 // BuildOptions controls optional behaviors of the build pipeline.
@@ -263,6 +265,7 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 			RootPath:   rootPrefix,
 			WriteMode:  opt.WriteMode,
 			MdPath:     pp.mdRel,
+			Version:    version,
 		}
 
 		outPath := filepath.Join(outDir, pp.htmlRel)
@@ -304,6 +307,7 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 			RootPath:   "",
 			WriteMode:  opt.WriteMode,
 			MdPath:     readmePage.mdRel,
+			Version:    version,
 		}
 		f, err := os.Create(indexPath)
 		if err != nil {
@@ -321,6 +325,7 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 			Tree:       tree,
 			StaticPath: "static",
 			RootPath:   "",
+			Version:    version,
 		}
 		f, err := os.Create(indexPath)
 		if err != nil {

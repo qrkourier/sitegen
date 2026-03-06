@@ -56,6 +56,8 @@
         <a href="{{.RootPath}}index.html">Home</a>
         <span class="footer-sep">&middot;</span>
         <a href="https://github.com/qrkourier/sitegen">GitHub</a>
+        {{if .Version}}<span class="footer-sep">&middot;</span>
+        <span class="footer-version">{{.Version}}</span>{{end}}
     </footer>
     <script src="{{.StaticPath}}/sort.js"></script>
     <script src="{{.StaticPath}}/filter.js"></script>

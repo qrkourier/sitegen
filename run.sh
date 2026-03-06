@@ -8,15 +8,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Parse global flags before the subcommand.
+NO_PAGER=false
+for arg in "$@"; do
+    case "$arg" in
+        --no-pager) NO_PAGER=true; shift; break ;;
+        *) break ;;
+    esac
+done
+
 # Export secrets / extra env vars from .env.sh if it exists.
 if [[ -f .env.sh ]]; then
     # shellcheck disable=SC1091
     source .env.sh
 fi
 
+# Set VERSION from git short SHA for Docker build args.
+export VERSION="${VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo dev)}"
+
 usage() {
     cat <<'EOF'
-Usage: ./run.sh <command> [options]
+Usage: ./run.sh [--no-pager] <command> [options]
 
 Commands:
   up        Build (if needed) and start in the background (force-recreate)
@@ -25,13 +37,16 @@ Commands:
   logs      Tail container logs (pass -f to follow)
   ps        Show container status
   build     Build images without starting
-  rebuild   Force-build images then recreate containers
+  rebuild   Pull base images, rebuild, then recreate containers
   config    Print the resolved compose configuration
 
 Write mode:
   Set WRITE_MODE=true and CONTENT_VOLUME_MODE=rw in .env to enable the
   markdown editor. The sitegen container reads WRITE_MODE from the
   environment and mounts content as read-write when CONTENT_VOLUME_MODE=rw.
+
+Global flags:
+  --no-pager  Skip the pager (less) for config output
 
 Options are forwarded to docker compose where applicable.
 EOF
@@ -69,12 +84,26 @@ case "${1:-}" in
         ;;
     rebuild)
         shift
-        compose build --no-cache "$@"
+        compose build --pull "$@"
         compose up --detach --force-recreate --remove-orphans "$@"
         ;;
     config)
         shift
-        compose config "$@"
+        if command -v yq &>/dev/null; then
+            if [[ -t 1 ]]; then
+                # stdout is a terminal — colorize
+                if [[ "$NO_PAGER" == true ]]; then
+                    compose config "$@" | yq -C
+                else
+                    compose config "$@" | yq -C | less -R
+                fi
+            else
+                # stdout is piped — plain YAML, no color
+                compose config "$@" | yq
+            fi
+        else
+            compose config "$@"
+        fi
         ;;
     ""|help|-h|--help)
         usage

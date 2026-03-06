@@ -627,14 +627,20 @@ article strong {
     min-height: 400px;
 }
 
-/* Override Vditor to inherit sitegen theme colors */
-#editor-container .vditor {
-    border-color: var(--sidebar-border);
-}
-
-#editor-container .vditor-toolbar {
-    background: var(--sidebar-bg);
-    border-bottom-color: var(--sidebar-border);
+.editor-textarea {
+    width: 100%;
+    height: calc(100vh - 160px);
+    min-height: 400px;
+    font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    padding: 1rem;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--fg);
+    resize: vertical;
+    tab-size: 4;
 }
 
 /* ---- Footer ---- */
@@ -659,6 +665,11 @@ article strong {
 
 .footer-sep {
     margin: 0 0.5rem;
+}
+
+.footer-version {
+    font-family: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+    font-size: 0.8em;
 }
 
 /* ---- Responsive: tablet (<=1024px) ---- */

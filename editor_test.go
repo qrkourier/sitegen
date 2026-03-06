@@ -150,7 +150,10 @@ func TestSecurityHeadersWriteMode(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	csp := rec.Header().Get("Content-Security-Policy")
-	if !strings.Contains(csp, "unpkg.com") {
-		t.Errorf("write mode CSP should allow unpkg.com CDN, got %q", csp)
+	if !strings.Contains(csp, "'self'") {
+		t.Errorf("write mode CSP should contain 'self', got %q", csp)
+	}
+	if !strings.Contains(csp, "'unsafe-inline'") {
+		t.Errorf("write mode CSP should allow unsafe-inline for editor styles, got %q", csp)
 	}
 }

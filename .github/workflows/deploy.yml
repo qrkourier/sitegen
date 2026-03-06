@@ -25,7 +25,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build sitegen
-        run: go build -o sitegen .
+        run: go build -ldflags="-X main.version=$(git rev-parse --short HEAD)" -o sitegen .
 
       - name: Generate site
         run: ./sitegen build -src demo -out _site

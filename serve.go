@@ -182,12 +182,9 @@ func securityHeaders(next http.Handler, writeMode bool) http.Handler {
 		w.Header().Set("Referrer-Policy", "no-referrer")
 
 		if writeMode {
-			// In write mode, relax CSP to allow Vditor editor from CDN
 			w.Header().Set("Content-Security-Policy",
 				"default-src 'self'; "+
-					"script-src 'self' https://unpkg.com; "+
-					"style-src 'self' 'unsafe-inline' https://unpkg.com; "+
-					"font-src 'self' https://unpkg.com; "+
+					"style-src 'self' 'unsafe-inline'; "+
 					"img-src 'self' data: https:")
 		} else {
 			w.Header().Set("Content-Security-Policy", "default-src 'self'")
