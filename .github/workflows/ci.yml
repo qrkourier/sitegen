@@ -21,7 +21,7 @@ jobs:
           go-version-file: go.mod
 
       - name: Build
-        run: go build -o sitegen .
+        run: go build -ldflags="-X main.version=$(git rev-parse --short HEAD)" -o sitegen .
 
       - name: Test
         run: go test -v -race -count=1 ./...
@@ -91,5 +91,7 @@ jobs:
           context: .
           push: false
           tags: sitegen:ci
+          build-args: |
+            VERSION=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

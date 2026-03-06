@@ -1,8 +1,11 @@
 services:
   sitegen:
-    build: .
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
     ports: !override []
     volumes: !override
-      - ./content:/content:ro
+      - ./content:/content:${CONTENT_VOLUME_MODE:-ro}
       - site-output:/docs
       - ./cert.pem:/cert.pem

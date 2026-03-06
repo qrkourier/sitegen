@@ -40,6 +40,30 @@ This creates `docs/` with:
 
 Open `http://localhost:8080` in a browser. Edit any `.md` file and refresh — the file watcher rebuilds automatically.
 
+## Serve anywhere with overlays
+
+sitegen can serve your site over [OpenZiti](https://openziti.io/) or [zrok](https://zrok.io/) overlay networks, making it accessible from anywhere without a VPS or public IP.
+
+When overlay environment variables are configured, the TCP listener is suppressed by default — the site is only reachable through the overlay. Pass `-addr :8080` explicitly if you also want a local TCP listener.
+
+### zrok
+
+With a [zrok account](https://zrok.io/) and `zrok enable` run once:
+
+```bash
+ZROK2_ENABLE_TOKEN=your-token ./sitegen serve -src content -out docs
+```
+
+sitegen creates a public zrok share and prints the access URL at startup.
+
+### OpenZiti
+
+```bash
+export ZITI_IDENTITY=$(base64 -w0 < identity.json)
+export ZITI_SERVICE=my-docs
+./sitegen serve -src content -out docs
+```
+
 ## Directory structure
 
 Subdirectories in the source become collapsible sections in the sidebar tree:

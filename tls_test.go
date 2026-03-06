@@ -316,7 +316,7 @@ func TestTLSConfigWithServer(t *testing.T) {
 
 	srv := httptest.NewUnstartedServer(securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("secure"))
-	})))
+	}), false))
 	srv.TLS = &tls.Config{Certificates: []tls.Certificate{tlsCert}}
 	srv.StartTLS()
 	defer srv.Close()

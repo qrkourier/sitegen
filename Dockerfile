@@ -5,14 +5,17 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 COPY . .
+ARG VERSION=dev
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /sitegen .
+    CGO_ENABLED=0 go build -trimpath \
+    -ldflags="-s -w -X main.version=${VERSION}" \
+    -o /sitegen .
 
 FROM alpine:3.21
 # hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates
 COPY --from=build /sitegen /usr/local/bin/sitegen
 ENTRYPOINT ["sitegen"]
-CMD ["serve", "-addr", ":8080"]
+CMD ["serve", "--addr", ":8080"]
 EXPOSE 8080
