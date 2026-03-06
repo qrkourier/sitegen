@@ -1,0 +1,18 @@
+services:
+  init-zrok-permissions:
+    image: busybox:latest
+    volumes:
+      - zrok-env:/zrok-env
+    command: ["sh", "-c", "chown -R ${PUID:-1000}:${PGID:-1000} /zrok-env"]
+
+  sitegen:
+    depends_on:
+      init-zrok-permissions:
+        condition: service_completed_successfully
+    environment:
+      - HOME=/tmp
+    volumes:
+      - zrok-env:/tmp/.zrok2
+
+volumes:
+  zrok-env:
