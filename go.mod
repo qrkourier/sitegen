@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	github.com/go-acme/lego/v4 v4.32.0
+	github.com/go-openapi/runtime v0.29.2
 	github.com/michaelquigley/pfxlog v0.6.10
 	github.com/openziti/sdk-golang v1.5.0
 	github.com/openziti/zrok/v2 v2.0.0-rc5
@@ -28,7 +29,6 @@ require (
 	github.com/go-openapi/jsonpointer v0.22.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.3 // indirect
 	github.com/go-openapi/loads v0.23.2 // indirect
-	github.com/go-openapi/runtime v0.29.2 // indirect
 	github.com/go-openapi/spec v0.22.1 // indirect
 	github.com/go-openapi/strfmt v0.25.0 // indirect
 	github.com/go-openapi/swag v0.25.1 // indirect

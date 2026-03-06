@@ -34,6 +34,11 @@ services:
       # Also uncomment the cert.pem volume above to persist the certificate.
       - ZITI_IDENTITY
       - ZITI_SERVICE
+      # Optional: zrok overlay — define in .env to enable.
+      - ZROK2_ENABLE_TOKEN
+      - ZROK2_API_ENDPOINT
+      - ZROK2_UNIQUE_NAME
+      - ZROK2_ENVIRONMENT_NAME
       - DNS_SAN
       - CLOUDFLARE_API_KEY
       - TLS_PRIVKEY

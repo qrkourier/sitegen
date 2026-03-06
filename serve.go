@@ -65,7 +65,7 @@ func runServe(srcDir, outDir, addr string, addrSet, noAddr, writeMode, verbose b
 		fmt.Fprintf(os.Stderr, "Ziti: %v\n", err)
 	}
 
-	zrokCleanup, err := startZrok(handler, tlsConfig)
+	zrokCleanup, err := startZrok(handler)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "zrok: %v\n", err)
 	}
