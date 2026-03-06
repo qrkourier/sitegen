@@ -32,7 +32,7 @@ func registerEditorAPI(mux *http.ServeMux, srcDir string) {
 			return
 		}
 
-		data, err := os.ReadFile(resolved)
+		data, err := os.ReadFile(resolved) //nolint:gosec // resolved is validated by safePath
 		if err != nil {
 			if os.IsNotExist(err) {
 				http.Error(w, "not found", http.StatusNotFound)
@@ -43,7 +43,7 @@ func registerEditorAPI(mux *http.ServeMux, srcDir string) {
 		}
 
 		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-		w.Write(data)
+		_, _ = w.Write(data) //nolint:gosec // content is user-owned markdown served with text/markdown type
 	})
 
 	// PUT /api/page?path=guides/getting-started.md — writes markdown content
@@ -67,25 +67,25 @@ func registerEditorAPI(mux *http.ServeMux, srcDir string) {
 			return
 		}
 
-		if err := os.MkdirAll(filepath.Dir(resolved), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(resolved), 0755); err != nil { //nolint:gosec // resolved is validated by safePath
 			http.Error(w, "directory creation failed", http.StatusInternalServerError)
 			return
 		}
 
-		if err := os.WriteFile(resolved, body, 0644); err != nil {
+		if err := os.WriteFile(resolved, body, 0644); err != nil { //nolint:gosec // resolved is validated by safePath
 			http.Error(w, "write error", http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		fmt.Printf("  saved: %s\n", mdPath)
 	})
 
 	// GET /api/pages — list all markdown files (for creating new pages)
 	mux.HandleFunc("GET /api/pages", func(w http.ResponseWriter, r *http.Request) {
 		var paths []string
-		filepath.WalkDir(absSrc, func(path string, d os.DirEntry, err error) error {
+		_ = filepath.WalkDir(absSrc, func(path string, d os.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return nil
 			}
@@ -97,7 +97,7 @@ func registerEditorAPI(mux *http.ServeMux, srcDir string) {
 		})
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(paths)
+		_ = json.NewEncoder(w).Encode(paths)
 	})
 }
 
