@@ -35,32 +35,57 @@ type TOCEntry struct {
 }
 
 type PageData struct {
-	Title      string
-	Content    template.HTML
-	TOC        []TOCEntry
-	Tree       []*TreeNode
-	StaticPath string
-	RootPath   string
-	WriteMode  bool
-	MdPath     string // relative markdown source path (write mode only)
-	Version    string
+	Title        string
+	Content      template.HTML
+	TOC          []TOCEntry
+	Tree         []*TreeNode
+	StaticPath   string
+	RootPath     string
+	WriteMode    bool
+	MdPath       string // relative markdown source path (write mode only)
+	Version      string
+	Session      string
+	Completed    string
+	Updated      string
+	PlanFilename string
+	WorkingDirs  []string
 }
 
 type PageMeta struct {
-	Title   string
-	Path    string
-	ModTime string
-	Size    string
+	Title     string
+	Session   string
+	Completed string // ISO date from frontmatter (empty = active)
+	Updated   string // ISO date from frontmatter
+	Path      string
+	ModTime   string
+	Size      string
 }
 
 type TreeNode struct {
-	Name     string
-	IsDir    bool
-	Path     string
-	Title    string
-	ModTime  string
-	Size     string
-	Children []*TreeNode
+	Name      string
+	IsDir     bool
+	Path      string
+	Title     string
+	Session   string // optional sidebar label from frontmatter
+	Completed string // ISO date — empty means active/in-progress
+	Updated   string // ISO date from frontmatter
+	ModTime   string
+	Size      string
+	Children  []*TreeNode
+}
+
+// HasFrontmatter reports whether this node had any recognized frontmatter fields.
+func (n *TreeNode) HasFrontmatter() bool {
+	return n.Session != "" || n.Completed != "" || n.Updated != ""
+}
+
+// SortDate returns the best available date for ordering: Updated if present,
+// otherwise ModTime.
+func (n *TreeNode) SortDate() string {
+	if n.Updated != "" {
+		return n.Updated
+	}
+	return n.ModTime
 }
 
 type IndexData struct {
@@ -78,8 +103,13 @@ type BuildOptions struct {
 }
 
 type parsedPage struct {
-	title    string
-	toc      []TOCEntry
+	title        string
+	session      string // from YAML frontmatter "session" field
+	completed    string // ISO date from frontmatter
+	updated      string // ISO date from frontmatter
+	planFilename string // from frontmatter
+	workingDirs  []string
+	toc          []TOCEntry
 	html     string
 	htmlRel  string
 	urlPath  string
@@ -201,16 +231,18 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 			return fmt.Errorf("reading %s: %w", mdPath, err)
 		}
 
-		reader := text.NewReader(source)
+		// Strip YAML frontmatter before parsing markdown.
+		fm, body := parseFrontmatter(source)
+		reader := text.NewReader(body)
 		doc := md.Parser().Parse(reader)
 
-		title, toc := extractMeta(doc, source)
+		title, toc := extractMeta(doc, body)
 		if title == "" {
 			title = strings.TrimSuffix(filepath.Base(mdPath), filepath.Ext(mdPath))
 		}
 
 		var htmlBuf bytes.Buffer
-		if err := md.Renderer().Render(&htmlBuf, source, doc); err != nil {
+		if err := md.Renderer().Render(&htmlBuf, body, doc); err != nil {
 			return fmt.Errorf("rendering %s: %w", mdPath, err)
 		}
 
@@ -218,15 +250,20 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 		isReadme := filepath.Clean(mdPath) == filepath.Clean(readmePath)
 
 		parsed = append(parsed, parsedPage{
-			title:    title,
-			toc:      toc,
+			title:        title,
+			session:      fm.Session,
+			completed:    fm.Completed,
+			updated:      fm.Updated,
+			planFilename: fm.PlanFilename,
+			workingDirs:  fm.WorkingDirs,
+			toc:          toc,
 			html:     htmlBuf.String(),
 			htmlRel:  htmlRel,
 			urlPath:  urlPath,
 			mdPath:   mdPath,
 			mdRel:    filepath.ToSlash(rel),
 			srcInfo:  srcInfo,
-			source:   source,
+			source:   body,
 			isReadme: isReadme,
 		})
 
@@ -234,9 +271,12 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 		// it will be rendered as index.html separately.
 		if !isReadme {
 			pages = append(pages, PageMeta{
-				Title:   title,
-				Path:    urlPath,
-				ModTime: srcInfo.ModTime().Format(time.DateOnly),
+				Title:     title,
+				Session:   fm.Session,
+				Completed: fm.Completed,
+				Updated:   fm.Updated,
+				Path:      urlPath,
+				ModTime:   srcInfo.ModTime().Format(time.DateOnly),
 			})
 		}
 	}
@@ -257,15 +297,20 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 		rootPrefix := strings.Repeat("../", depth)
 
 		page := PageData{
-			Title:      pp.title,
-			Content:    template.HTML(pp.html),
-			TOC:        pp.toc,
-			Tree:       prefixTreePaths(tree, rootPrefix),
-			StaticPath: rootPrefix + "static",
-			RootPath:   rootPrefix,
-			WriteMode:  opt.WriteMode,
-			MdPath:     pp.mdRel,
-			Version:    version,
+			Title:        pp.title,
+			Content:      template.HTML(pp.html),
+			TOC:          pp.toc,
+			Tree:         prefixTreePaths(tree, rootPrefix),
+			StaticPath:   rootPrefix + "static",
+			RootPath:     rootPrefix,
+			WriteMode:    opt.WriteMode,
+			MdPath:       pp.mdRel,
+			Version:      version,
+			Session:      pp.session,
+			Completed:    pp.completed,
+			Updated:      pp.updated,
+			PlanFilename: pp.planFilename,
+			WorkingDirs:  pp.workingDirs,
 		}
 
 		outPath := filepath.Join(outDir, pp.htmlRel)
@@ -299,15 +344,20 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 	indexPath := filepath.Join(outDir, "index.html")
 	if readmePage != nil {
 		page := PageData{
-			Title:      readmePage.title,
-			Content:    template.HTML(readmePage.html),
-			TOC:        readmePage.toc,
-			Tree:       tree,
-			StaticPath: "static",
-			RootPath:   "",
-			WriteMode:  opt.WriteMode,
-			MdPath:     readmePage.mdRel,
-			Version:    version,
+			Title:        readmePage.title,
+			Content:      template.HTML(readmePage.html),
+			TOC:          readmePage.toc,
+			Tree:         tree,
+			StaticPath:   "static",
+			RootPath:     "",
+			WriteMode:    opt.WriteMode,
+			MdPath:       readmePage.mdRel,
+			Version:      version,
+			Session:      readmePage.session,
+			Completed:    readmePage.completed,
+			Updated:      readmePage.updated,
+			PlanFilename: readmePage.planFilename,
+			WorkingDirs:  readmePage.workingDirs,
 		}
 		f, err := os.Create(indexPath)
 		if err != nil {
@@ -347,6 +397,73 @@ func runBuild(src, outDir string, opts ...BuildOptions) error {
 
 	fmt.Printf("Built %d page(s) -> %s/\n", len(parsed), outDir)
 	return nil
+}
+
+// frontmatter holds the parsed YAML frontmatter fields.
+type frontmatter struct {
+	Session      string
+	Completed    string
+	Updated      string
+	PlanFilename string
+	WorkingDirs  []string
+}
+
+// parseFrontmatter strips YAML frontmatter (delimited by "---") from the
+// beginning of source and extracts recognized fields. Returns the parsed
+// frontmatter and the remaining body bytes.
+func parseFrontmatter(source []byte) (frontmatter, []byte) {
+	s := string(source)
+	if !strings.HasPrefix(s, "---\n") && !strings.HasPrefix(s, "---\r\n") {
+		return frontmatter{}, source
+	}
+	end := strings.Index(s[3:], "\n---")
+	if end < 0 {
+		return frontmatter{}, source
+	}
+	// end is relative to s[3:], so frontmatter block is s[4 : 3+end]
+	fm := s[4 : 3+end]
+	// Skip past the closing "---" line
+	rest := s[3+end+4:] // +4 for "\n---"
+	if len(rest) > 0 && rest[0] == '\n' {
+		rest = rest[1:]
+	} else if strings.HasPrefix(rest, "\r\n") {
+		rest = rest[2:]
+	}
+
+	var result frontmatter
+	inWorkingDirs := false
+	for line := range strings.SplitSeq(fm, "\n") {
+		trimmed := strings.TrimSpace(line)
+		// Detect YAML list continuation for working_dirs
+		if inWorkingDirs {
+			if val, ok := strings.CutPrefix(trimmed, "- "); ok {
+				result.WorkingDirs = append(result.WorkingDirs, unquoteYAML(val))
+				continue
+			}
+			inWorkingDirs = false
+		}
+		if val, ok := strings.CutPrefix(trimmed, "session:"); ok {
+			result.Session = unquoteYAML(val)
+		} else if val, ok := strings.CutPrefix(trimmed, "completed:"); ok {
+			result.Completed = unquoteYAML(val)
+		} else if val, ok := strings.CutPrefix(trimmed, "updated:"); ok {
+			result.Updated = unquoteYAML(val)
+		} else if val, ok := strings.CutPrefix(trimmed, "plan_filename:"); ok {
+			result.PlanFilename = unquoteYAML(val)
+		} else if _, ok := strings.CutPrefix(trimmed, "working_dirs:"); ok {
+			inWorkingDirs = true
+		}
+	}
+	return result, []byte(rest)
+}
+
+// unquoteYAML trims whitespace and optional surrounding quotes from a YAML value.
+func unquoteYAML(val string) string {
+	val = strings.TrimSpace(val)
+	if len(val) >= 2 && ((val[0] == '"' && val[len(val)-1] == '"') || (val[0] == '\'' && val[len(val)-1] == '\'')) {
+		val = val[1 : len(val)-1]
+	}
+	return val
 }
 
 func extractMeta(doc ast.Node, source []byte) (string, []TOCEntry) {
@@ -443,11 +560,14 @@ func buildTree(pages []PageMeta) []*TreeNode {
 		for i, part := range parts {
 			if i == len(parts)-1 {
 				node.Children = append(node.Children, &TreeNode{
-					Name:    part,
-					Title:   p.Title,
-					Path:    p.Path,
-					ModTime: p.ModTime,
-					Size:    p.Size,
+					Name:      part,
+					Title:     p.Title,
+					Session:   p.Session,
+					Completed: p.Completed,
+					Updated:   p.Updated,
+					Path:      p.Path,
+					ModTime:   p.ModTime,
+					Size:      p.Size,
 				})
 			} else {
 				var dir *TreeNode
@@ -472,11 +592,18 @@ func buildTree(pages []PageMeta) []*TreeNode {
 
 func sortTree(nodes []*TreeNode) {
 	sort.Slice(nodes, func(i, j int) bool {
+		// dirs before files
 		if nodes[i].IsDir != nodes[j].IsDir {
 			return nodes[i].IsDir
 		}
-		// newest first by source file modtime
-		return nodes[i].ModTime > nodes[j].ModTime
+		// active (non-completed) before completed
+		iDone := nodes[i].Completed != ""
+		jDone := nodes[j].Completed != ""
+		if iDone != jDone {
+			return !iDone
+		}
+		// within each group, newest first by updated (or modtime fallback)
+		return nodes[i].SortDate() > nodes[j].SortDate()
 	})
 	for _, n := range nodes {
 		if n.IsDir {
@@ -507,6 +634,7 @@ type searchEntry struct {
 	Title   string `json:"t"`
 	Path    string `json:"p"`
 	Content string `json:"c"`
+	Updated string `json:"u,omitempty"`
 }
 
 func writeSearchIndex(outDir string, pages []parsedPage) error {
@@ -520,10 +648,16 @@ func writeSearchIndex(outDir string, pages []parsedPage) error {
 		if len(content) > 2000 {
 			content = content[:2000]
 		}
+		// Use frontmatter updated date, fall back to file modtime
+		sortDate := pp.updated
+		if sortDate == "" && pp.srcInfo != nil {
+			sortDate = pp.srcInfo.ModTime().Format("2006-01-02")
+		}
 		entries = append(entries, searchEntry{
 			Title:   pp.title,
 			Path:    path,
 			Content: content,
+			Updated: sortDate,
 		})
 	}
 	data, err := json.Marshal(entries)

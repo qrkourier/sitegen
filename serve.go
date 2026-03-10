@@ -36,10 +36,15 @@ func runServe(srcDir, outDir, addr string, addrSet, noAddr, writeMode, verbose b
 		return fmt.Errorf("initial build: %w", err)
 	}
 
+	// SSE hub for live-change notifications
+	hub := newSSEHub()
+
 	// Start watcher
-	go watchAndRebuild(srcDir, outDir, buildOpts)
+	go watchAndRebuild(srcDir, outDir, hub, buildOpts)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/events", hub.handler)
+	registerFoldsAPI(mux, outDir)
 
 	// Register editor API routes only in write mode
 	if writeMode {
@@ -196,7 +201,7 @@ func securityHeaders(next http.Handler, writeMode bool) http.Handler {
 
 // watchAndRebuild polls the source directory for changes and rebuilds when
 // any markdown file is added, removed, or modified.
-func watchAndRebuild(srcDir, outDir string, opts ...BuildOptions) {
+func watchAndRebuild(srcDir, outDir string, hub *sseHub, opts ...BuildOptions) {
 	var (
 		mu        sync.Mutex
 		building  bool
@@ -226,11 +231,71 @@ func watchAndRebuild(srcDir, outDir string, opts ...BuildOptions) {
 			fmt.Fprintf(os.Stderr, "rebuild error: %v\n", err)
 		} else {
 			fmt.Println("Rebuild complete")
+			hub.broadcast("changed")
 		}
 
 		mu.Lock()
 		building = false
 		mu.Unlock()
+	}
+}
+
+// sseHub manages Server-Sent Events connections for live-change notifications.
+type sseHub struct {
+	mu      sync.Mutex
+	clients map[chan string]struct{}
+}
+
+func newSSEHub() *sseHub {
+	return &sseHub{clients: make(map[chan string]struct{})}
+}
+
+func (h *sseHub) broadcast(msg string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for ch := range h.clients {
+		select {
+		case ch <- msg:
+		default:
+		}
+	}
+}
+
+func (h *sseHub) handler(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	ch := make(chan string, 4)
+	h.mu.Lock()
+	h.clients[ch] = struct{}{}
+	h.mu.Unlock()
+
+	defer func() {
+		h.mu.Lock()
+		delete(h.clients, ch)
+		h.mu.Unlock()
+	}()
+
+	// Send initial keepalive so the client knows the connection is live
+	fmt.Fprintf(w, ": connected\n\n")
+	flusher.Flush()
+
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case msg := <-ch:
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			flusher.Flush()
+		}
 	}
 }
 

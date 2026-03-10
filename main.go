@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -62,6 +63,7 @@ func main() {
 	serveCmd.Flags().Bool("no-addr", false, "skip TCP listener (overlay only)")
 	serveCmd.Flags().Bool("write", false, "enable markdown editor (read-write mode)")
 	serveCmd.Flags().Bool("verbose", false, "enable verbose logging")
+	serveCmd.Flags().Duration("since", 720*time.Hour, "default sidebar age filter (Go duration, e.g. 720h for past month)")
 
 	root.AddCommand(buildCmd, serveCmd)
 

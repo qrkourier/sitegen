@@ -3,7 +3,7 @@
         <summary>{{.Name}}</summary>
         <ul>{{template "sidebar-tree" .Children}}</ul>
     </details>
-</li>{{else}}<li class="tree-file"><a href="{{.Path}}">{{.Title}}</a></li>{{end}}{{end}}{{end}}
+</li>{{else}}<li class="tree-file{{if not .HasFrontmatter}} tree-file-sparse{{end}}{{if .Completed}} tree-file-completed{{end}}" data-completed="{{.Completed}}" data-updated="{{.SortDate}}"><a href="{{.Path}}">{{if .Session}}{{.Session}}{{else}}{{.Title}}{{end}}</a></li>{{end}}{{end}}{{end}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +28,7 @@
                 </ul>
                 {{end}}
             </div>
+            {{template "age-filter"}}
             {{template "theme-picker"}}
         </nav>
         <main class="content">

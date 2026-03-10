@@ -231,3 +231,31 @@ func TestBuildTree(t *testing.T) {
 		t.Errorf("expected Getting Started file, got %+v", gs)
 	}
 }
+
+func TestBuildTreeCompletedSort(t *testing.T) {
+	pages := []PageMeta{
+		{Title: "Done-Old", Path: "done-old.html", ModTime: "2025-01-01", Completed: "2025-06-01"},
+		{Title: "Active-Old", Path: "active-old.html", ModTime: "2025-03-01"},
+		{Title: "Done-New", Path: "done-new.html", ModTime: "2026-01-01", Completed: "2026-01-15"},
+		{Title: "Active-New", Path: "active-new.html", ModTime: "2026-02-01"},
+	}
+	tree := buildTree(pages)
+
+	if len(tree) != 4 {
+		t.Fatalf("expected 4 nodes, got %d", len(tree))
+	}
+	// Active items first (newest first)
+	if tree[0].Title != "Active-New" {
+		t.Errorf("first should be Active-New, got %s", tree[0].Title)
+	}
+	if tree[1].Title != "Active-Old" {
+		t.Errorf("second should be Active-Old, got %s", tree[1].Title)
+	}
+	// Completed items after (newest first)
+	if tree[2].Title != "Done-New" {
+		t.Errorf("third should be Done-New, got %s", tree[2].Title)
+	}
+	if tree[3].Title != "Done-Old" {
+		t.Errorf("fourth should be Done-Old, got %s", tree[3].Title)
+	}
+}
